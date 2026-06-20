@@ -9,6 +9,8 @@
 -- <tag> }; the first occurrence in runtimepath order wins, matching vim's "first
 -- tags file" precedence.
 
+local helptags = require("nxvim-help.helptags")
+
 local M = {}
 
 -- The merged tag -> entry map, built lazily on first :help and cached. nil until built.
@@ -53,12 +55,64 @@ function M.build_from(tag_files)
   end)()
 end
 
--- Build (or rebuild) the index by scanning every `doc/tags` on the runtimepath, then
--- cache it. Returns a promise of the index table.
+-- Build an in-memory index for a single doc/ dir by scanning its `*.txt` for targets
+-- — no tags file needed. Async; returns a promise of a tag -> entry map (first
+-- occurrence of a tag within the dir wins). build() uses this for dirs that ship docs
+-- without a generated tags file; it is also the directly testable seam.
+function M.scan_dir(dir)
+  return nx.async(function()
+    local out = {}
+    local entries = nx.await(nx.fs.readdir(dir))
+    table.sort(entries, function(a, b)
+      return a.name < b.name
+    end)
+    for _, e in ipairs(entries) do
+      if e.type ~= "directory" and e.name:sub(-4) == ".txt" then
+        local text = nx.await(nx.fs.read_text(dir .. "/" .. e.name))
+        for _, tag in ipairs(helptags.targets(text)) do
+          if not out[tag] then
+            out[tag] = { file = dir .. "/" .. e.name, name = tag }
+          end
+        end
+      end
+    end
+    return out
+  end)()
+end
+
+-- Build (or rebuild) the index from the runtimepath, then cache it. On-disk
+-- `doc/tags` files are the fast, authoritative source; any doc/ dir that ships `.txt`
+-- but no tags file is scanned directly (helptags.targets), so help works even when a
+-- plugin never generated a tags file. A tag already provided by a tags file wins over
+-- a derived one. Returns a promise of the index table.
 function M.build()
   return nx.async(function()
-    M._index = nx.await(M.build_from(nx.runtime_file("doc/tags", true)))
-    return M._index
+    local out = {}
+    local has_tags = {} -- dir -> true (a tags file already covered this dir)
+    for _, tf in ipairs(nx.runtime_file("doc/tags", true) or {}) do
+      local ok, text = pcall(nx.await, nx.fs.read_text(tf))
+      if ok and text then
+        local dir = dirname(tf)
+        has_tags[dir] = true
+        M.parse_into(out, text, dir)
+      end
+    end
+    -- doc/ dirs with .txt but no tags file: derive targets directly.
+    local seen_dir = {}
+    for _, txt in ipairs(nx.runtime_file("doc/*.txt", true) or {}) do
+      local dir = dirname(txt)
+      if not has_tags[dir] and not seen_dir[dir] then
+        seen_dir[dir] = true
+        local derived = nx.await(M.scan_dir(dir))
+        for tag, entry in pairs(derived) do
+          if not out[tag] then
+            out[tag] = entry
+          end
+        end
+      end
+    end
+    M._index = out
+    return out
   end)()
 end
 

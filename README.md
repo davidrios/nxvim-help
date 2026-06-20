@@ -16,20 +16,25 @@ q                           (in the help window) close it
 
 ## How plugins register help
 
-**There is no registration API.** Any plugin that ships a `doc/` directory with a
-`tags` file is discovered automatically — exactly like dropping `doc/` into a neovim
-plugin. `:Plugins` already puts every installed plugin on the runtimepath, so
-`nx.runtime_file("doc/tags", true)` finds them all (this plugin's own docs included).
+**There is no registration API.** Any plugin that ships a `doc/` directory is
+discovered automatically — exactly like dropping `doc/` into a neovim plugin.
+`:Plugins` already puts every installed plugin on the runtimepath, so
+`nx.runtime_file` finds every `doc/` (this plugin's own docs included).
 
-A `tags` file is one line per `*target*`:
+**A `tags` file is optional.** If a `doc/` has one it is used (fast, and readable by
+vim); otherwise nxvim-help derives the `*targets*` straight from `doc/*.txt`, so help
+works with zero setup. A `tags` file is one line per `*target*`:
 
 ```
 my-topic	my-plugin.txt	/*my-topic*
 ```
 
-i.e. `tag<Tab>file<Tab>address`, with `file` relative to the `doc/` directory holding
-the `tags` file. Topic lookup is exact-first, then the shortest prefix match
-(`:help my-to` → `my-topic`); an unknown topic is a loud vim-style `E149`.
+i.e. `tag<Tab>file<Tab>address`, with `file` relative to its `doc/` directory.
+Generate one with `:NxHelptags [dir]` (no arg / `ALL` does every `doc/` on the
+runtimepath) — named `:NxHelptags` because nxvim core owns `:helptags`.
+
+Topic lookup is exact-first, then the shortest prefix match (`:help my-to` →
+`my-topic`); an unknown topic is a loud vim-style `E149`.
 
 > Because nxvim-help is **optional**, a plugin's `doc/` is only *viewable* when the
 > user has installed nxvim-help. The docs ship harmlessly regardless.
@@ -58,14 +63,16 @@ editor over a temp filesystem:
 nxvim --test-plugin .
 ```
 
-`test/index_spec.lua` covers tag parsing / merge / lookup; `test/window_spec.lua`
-covers real runtimepath discovery and opening a topic at its anchor.
+`test/index_spec.lua` covers tag parsing / merge / lookup; `test/helptags_spec.lua`
+covers target extraction, tags generation and the tags-optional scan; and
+`test/window_spec.lua` covers real runtimepath discovery (no tags file) and opening a
+topic at its anchor.
 
 ## Status
 
-Phase 1 (this release): runtimepath tag discovery, `:help {topic}` / `:h` opening a
-topic at its tag in a read-only split, prefix resolution, `q` to close.
+Done: runtimepath discovery (tags file optional — derived from `doc/*.txt` when
+absent), `:help {topic}` / `:h` opening a topic at its tag in a read-only split,
+prefix resolution, `q` to close, and `:NxHelptags [dir|ALL]` tag generation.
 
-Planned: a fuzzy-finder topic picker (`nx.picker`), `:helptags [ALL]` generation from
-`doc/*.txt`, in-help tag following (`<C-]>` / `<C-t>`), syntax highlighting of
-`*targets*` / `|links|`, and `K` / `keywordprg`.
+Planned: a fuzzy-finder topic picker (`nx.picker`), in-help tag following (`<C-]>` /
+`<C-t>`), syntax highlighting of `*targets*` / `|links|`, and `K` / `keywordprg`.

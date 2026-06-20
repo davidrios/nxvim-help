@@ -16,6 +16,7 @@
 
 local index = require("nxvim-help.index")
 local window = require("nxvim-help.window")
+local helptags = require("nxvim-help.helptags")
 
 local M = {}
 
@@ -51,6 +52,32 @@ function M.help(topic)
   end)
 end
 
+-- :NxHelptags [dir] — write a vim-style doc/tags from doc/*.txt. No argument (or
+-- "ALL") regenerates every doc/ dir on the runtimepath. Optional: the index already
+-- reads .txt directly, so this is for interop/startup speed, not correctness. Named
+-- :NxHelptags because nxvim core owns (a stub of) :helptags.
+function M.helptags(dir)
+  run(function()
+    dir = dir and trim(dir) or ""
+    local dirs
+    if dir == "" or dir:upper() == "ALL" then
+      dirs = helptags.doc_dirs()
+    else
+      dirs = { dir }
+    end
+    local total = 0
+    for _, d in ipairs(dirs) do
+      local res = nx.await(helptags.generate(d))
+      total = total + res.count
+      if #res.dupes > 0 then
+        nx.notify("nxvim-help: duplicate tags in " .. d .. ": " .. table.concat(res.dupes, ", "), 3)
+      end
+    end
+    index._index = nil -- invalidate the cache so the next :help sees the new tags
+    nx.notify("nxvim-help: wrote tags for " .. #dirs .. " dir(s), " .. total .. " tags")
+  end)
+end
+
 local did_setup = false
 
 -- setup() — register the :help / :h commands and the help-buffer keymaps. Idempotent,
@@ -68,6 +95,11 @@ function M.setup(_opts)
       M.help(a.args)
     end, { desc = "Open nxvim help for {topic}" })
   end
+
+  -- :NxHelptags [dir|ALL] — (re)generate doc/tags. (:helptags is core-owned.)
+  nx.user_command.create("NxHelptags", function(a)
+    M.helptags(a.args)
+  end, { desc = "Generate help tags from doc/*.txt ([dir] or ALL)" })
 
   -- Buffer-local maps for the help window, installed when a help buffer loads.
   nx.autocmd.create("FileType", {

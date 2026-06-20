@@ -37,9 +37,10 @@ nx.test.describe("nxvim-help window", function()
     window._reset()
   end)
 
-  nx.test.it("discovers its own doc/tags on the runtimepath", function()
-    local files = nx.runtime_file("doc/tags", true)
-    nx.test.expect(#files >= 1).to_be_truthy()
+  nx.test.it("discovers its own docs on the runtimepath (no tags file needed)", function()
+    -- nxvim-help ships no doc/tags; the index derives targets from doc/*.txt.
+    local txts = nx.runtime_file("doc/*.txt", true)
+    nx.test.expect(#txts >= 1).to_be_truthy()
     local idx = nx.await(index.build())
     nx.test.expect(idx["nxvim-help"]).to_be_truthy()
     nx.test.expect(idx["nxvim-help-usage"]).to_be_truthy()
