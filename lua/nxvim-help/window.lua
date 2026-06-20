@@ -11,7 +11,6 @@ local highlight = require("nxvim-help.highlight")
 local M = {}
 
 local view = nil -- the singleton help view handle
-local mounted = false -- whether the view is currently shown
 local current = nil -- the entry currently displayed (for the tag stack)
 
 -- The 1-based line of the `*tag*` anchor in `lines`, or 1 if absent. Vim's tag
@@ -50,15 +49,22 @@ function M.show(entry, line)
   return nx.async(function()
     local text = nx.await(nx.fs.read_text(entry.file))
     local lines = split_lines(text)
+    -- A cached handle can go stale behind our back: `:bd` of the help buffer destroys
+    -- the view (its bufnr mirror clears), and `:q` closes its window (winid clears)
+    -- without telling us. Drop a dead handle so we recreate it, and decide mount vs
+    -- focus from the *live* winid rather than a flag we'd fail to update on `:q`.
+    if view and not view:bufnr() then
+      view = nil
+      current = nil
+    end
     if not view then
       view = nx.view.create({ name = "[Help]", filetype = "help" })
     end
     view:set_lines(lines)
-    if not mounted then
-      view:mount({ split = "split" })
-      mounted = true
-    else
+    if view:winid() then
       view:focus()
+    else
+      view:mount({ split = "split" })
     end
     view:set_cursor(line or anchor_line(lines, entry.name))
     current = entry
@@ -80,11 +86,11 @@ function M.current()
   return current
 end
 
--- Close the help split (keeps the handle for reuse).
+-- Close the help split (keeps the handle for reuse). unmount is a no-op when the
+-- view isn't currently shown, so no mounted flag to track.
 function M.close()
-  if view and mounted then
+  if view then
     view:unmount()
-    mounted = false
   end
 end
 
@@ -106,7 +112,6 @@ function M._reset()
     view:close()
   end
   view = nil
-  mounted = false
   current = nil
 end
 
