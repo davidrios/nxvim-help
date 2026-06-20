@@ -8,8 +8,8 @@ index merged across the runtimepath, and the file is read with the promise `nx.f
 API.
 
 ```
+:help                       fuzzy-find a topic (the picker)
 :help nxvim-help            open help for a topic
-:help                       open the front page
 :h nxvim-help-usage         :h is the abbreviation
 q                           (in the help window) close it
 ```
@@ -72,7 +72,8 @@ topic at its anchor.
 
 Done: runtimepath discovery (tags file optional — derived from `doc/*.txt` when
 absent), `:help {topic}` / `:h` opening a topic at its tag in a read-only split,
-prefix resolution, `q` to close, and `:NxHelptags [dir|ALL]` tag generation.
+prefix resolution, a fuzzy-finder topic picker on bare `:help` (`nx.picker`), `q` to
+close, and `:NxHelptags [dir|ALL]` tag generation.
 
-Planned: a fuzzy-finder topic picker (`nx.picker`), in-help tag following (`<C-]>` /
-`<C-t>`), syntax highlighting of `*targets*` / `|links|`, and `K` / `keywordprg`.
+Planned: in-help tag following (`<C-]>` / `<C-t>`), syntax highlighting of
+`*targets*` / `|links|`, and `K` / `keywordprg`.

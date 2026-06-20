@@ -17,6 +17,7 @@
 local index = require("nxvim-help.index")
 local window = require("nxvim-help.window")
 local helptags = require("nxvim-help.helptags")
+local picker = require("nxvim-help.picker")
 
 local M = {}
 
@@ -33,16 +34,17 @@ local function trim(s)
   return (s:gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
--- :help {topic} — resolve the topic against the merged runtimepath tag index and open
--- it in the help split. No topic opens the front page. An unknown topic is a loud,
--- vim-style E149 (a user error, surfaced — never a silent no-op).
+-- :help [topic] — with a topic, resolve it against the merged runtimepath tag index
+-- and open it in the help split; with no topic, open the fuzzy topic picker. An
+-- unknown topic is a loud, vim-style E149 (a user error, surfaced — never silent).
 function M.help(topic)
+  topic = topic and trim(topic) or ""
+  if topic == "" then
+    picker.open()
+    return
+  end
   run(function()
     local idx = nx.await(index.ensure())
-    topic = topic and trim(topic) or ""
-    if topic == "" then
-      topic = "nxvim-help"
-    end
     local entry = index.lookup(idx, topic)
     if not entry then
       nx.notify('E149: Sorry, no help for "' .. topic .. '"', 4)

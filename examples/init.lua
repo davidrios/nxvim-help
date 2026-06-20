@@ -5,6 +5,8 @@
 --     NXVIM_CONFIG=examples cargo run -p nxvim -- README.md
 --
 -- TRY IT:
+--   :help                         fuzzy-find a topic (the picker) — type to filter,
+--                                 <C-n>/<C-p> move, <CR> opens, <Esc> cancels
 --   :help nxvim-help              open this plugin's help at the top
 --   :help nxvim-help-usage        jump straight to a tagged section
 --   :help nxvim-help-u            prefix match resolves to …-usage

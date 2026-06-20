@@ -7,7 +7,7 @@ nxvim-help brings vim-style `:help` to nxvim. It is an optional first-party
 plugin built entirely on the native nx.* plugin API.
 
 	:help {topic}		Open help for {topic}.
-	:help			Open this page.
+	:help			Fuzzy-find a topic (the picker).
 	q			(in a help window) close it.
 
 ==============================================================================
