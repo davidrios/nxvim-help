@@ -81,15 +81,39 @@ function M.helptags(dir)
   end)
 end
 
-local did_setup = false
-
--- setup() — register the :help / :h commands and the help-buffer keymaps. Idempotent,
--- so the auto-loader (plugin/nxvim-help.lua) and a user's explicit call coexist.
-function M.setup(_opts)
-  if did_setup then
+-- :help for the word under the cursor — the `K` / `keywordprg` action. Uses <cWORD>
+-- (the whole non-blank token), since help tags contain '.'/'-' that <cword> stops at,
+-- then trims surrounding punctuation (so `(nx.view)` / `|tag|` resolve). No word under
+-- the cursor is a loud no-op (not the bare-:help picker, which would surprise on K).
+function M.help_cword()
+  local word = (nx.expand("<cWORD>") or ""):gsub("^[^%w_]+", ""):gsub("[^%w_]+$", "")
+  if word == "" then
+    nx.notify("nxvim-help: no word under the cursor", 3)
     return
   end
-  did_setup = true
+  M.help(word)
+end
+
+local registered = false
+
+-- setup([opts]) — register the commands/keymaps (once) and apply per-call options.
+-- The auto-loader (plugin/nxvim-help.lua) calls setup() with no opts, and a user's
+-- later setup{...} still takes effect: registration is one-time, opts are not.
+--   opts.keywordprg = true  → map `K` (normal mode) to help for the word under the
+--   cursor. Off by default so it doesn't clobber an LSP-hover `K`.
+function M.setup(opts)
+  opts = opts or {}
+
+  if opts.keywordprg then
+    nx.keymap.set("n", "K", function()
+      M.help_cword()
+    end, { desc = "Help for the word under the cursor" })
+  end
+
+  if registered then
+    return
+  end
+  registered = true
 
   -- nxvim core has no built-in :help, so this defines it; :h is the vim abbreviation.
   -- A core built-in (if one is ever added) takes precedence, so registering :h is safe.

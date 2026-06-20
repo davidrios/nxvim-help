@@ -14,6 +14,7 @@ API.
 CTRL-] / <CR>               (in help) follow the tag under the cursor
 CTRL-T                      (in help) jump back along the tag stack
 q                           (in the help window) close it
+K                           help for the word under the cursor (opt-in)
 ```
 
 ## How plugins register help
@@ -46,7 +47,10 @@ Topic lookup is exact-first, then the shortest prefix match (`:help my-to` →
 ```lua
 -- in your init.lua
 nx.plugins({ { "davidrios/nxvim-help" } })
--- :help works on load; require("nxvim-help").setup() is optional (idempotent).
+-- :help works on load. setup() is optional; pass keywordprg to map K to
+-- "help for the word under the cursor" (off by default so it leaves an
+-- LSP-hover K alone):
+require("nxvim-help").setup({ keywordprg = true })
 ```
 
 ## Try it
@@ -72,11 +76,16 @@ topic at its anchor.
 
 ## Status
 
-Done: runtimepath discovery (tags file optional — derived from `doc/*.txt` when
-absent), `:help {topic}` / `:h` opening a topic at its tag in a read-only split,
-prefix resolution, a fuzzy-finder topic picker on bare `:help` (`nx.picker`), in-help
-tag following (`<C-]>` / `<CR>` follow, `<C-t>` back), syntax highlighting of
-headings / `*targets*` / `|links|` / `` `code` `` (extmark groups linked to standard
-highlights), `q` to close, and `:NxHelptags [dir|ALL]` tag generation.
+Complete:
 
-Planned: `K` / `keywordprg`.
+- runtimepath discovery — a `tags` file is optional (derived from `doc/*.txt`)
+- `:help {topic}` / `:h` open a topic at its tag in a read-only split; prefix
+  resolution; unknown topic → loud `E149`
+- bare `:help` opens a fuzzy-finder topic picker (`nx.picker`)
+- in-help tag following: `<C-]>` / `<CR>` follow, `<C-t>` back (a tag stack)
+- syntax highlighting of headings / `*targets*` / `|links|` / `` `code` `` (extmark
+  groups linked to standard highlights)
+- `:NxHelptags [dir|ALL]` generates a vim-style `tags` file
+- `K` / `keywordprg` — opt-in (`setup{ keywordprg = true }`) — help for the word
+  under the cursor
+- `q` closes the help window
