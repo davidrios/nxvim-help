@@ -62,4 +62,37 @@ nx.test.describe("nxvim-help.tagstack follow/back", function()
     end)
     nx.test.expect(back.name).to_be("nxvim-help")
   end)
+
+  nx.test.it("<C-t> restores the exact column, not just the line", function(t)
+    help.help("nxvim-help") -- front page
+    t:wait_for(function()
+      local c = window.current()
+      return c and c.name == "nxvim-help"
+    end)
+    -- land on a hot-link mid-line, so the from-position has a non-zero column.
+    t:feed("/nxvim-help-usage<CR>")
+    local from = t:wait_for(function()
+      local p = nx.cursor.get()
+      return p[2] > 0 and p -- non-zero column, else this test proves nothing
+    end)
+
+    t:feed("<C-]>")
+    t:wait_for(function()
+      local c = window.current()
+      return c and c.name == "nxvim-help-usage"
+    end)
+
+    t:feed("<C-t>")
+    -- back on the front page AND on the exact (line, col) the follow jumped from.
+    local pos = t:wait_for(function()
+      local c = window.current()
+      if not (c and c.name == "nxvim-help") then
+        return nil
+      end
+      local p = nx.cursor.get()
+      return p[1] == from[1] and p[2] == from[2] and p
+    end)
+    nx.test.expect(pos[1]).to_be(from[1])
+    nx.test.expect(pos[2]).to_be(from[2])
+  end)
 end)

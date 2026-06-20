@@ -44,8 +44,10 @@ local function split_lines(text)
 end
 
 -- Open `entry` in the help split. Jumps to `line` if given (used to restore position
--- when popping the tag stack), else to the tag's `*anchor*`. Async (reads the file).
-function M.show(entry, line)
+-- when popping the tag stack), else to the tag's `*anchor*`. `col` (0-based) refines
+-- the cursor to an exact column — the tag stack passes it so `<C-t>` lands back on the
+-- precise spot a follow jumped from, not just its line. Async (reads the file).
+function M.show(entry, line, col)
   return nx.async(function()
     local text = nx.await(nx.fs.read_text(entry.file))
     local lines = split_lines(text)
@@ -66,7 +68,13 @@ function M.show(entry, line)
     else
       view:mount({ split = "split" })
     end
-    view:set_cursor(line or anchor_line(lines, entry.name))
+    local target = line or anchor_line(lines, entry.name)
+    view:set_cursor(target) -- focuses the view and lands on the line (column 0)
+    -- nx.view's cursor is line-granular; refine to the exact byte column when asked,
+    -- via the public cursor setter (1-based row, 0-based col).
+    if col and col > 0 and view:winid() then
+      nx.cursor.set({ target, col }, view:winid())
+    end
     current = entry
     -- Syntax highlighting (cosmetic): apply once the backing buffer exists. Don't
     -- block the show on it; surface a failure rather than swallowing it.

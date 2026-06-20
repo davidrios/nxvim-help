@@ -85,7 +85,9 @@ function M.follow()
     end
     local from = window.current()
     if from then
-      stack[#stack + 1] = { entry = from, line = window.line() }
+      -- Record the full (line, col) so `<C-t>` returns to the exact spot, not just
+      -- the line. `pos` is the live cursor we already read above for `tag_at`.
+      stack[#stack + 1] = { entry = from, line = pos[1], col = pos[2] }
     end
     nx.await(window.show(entry))
   end)
@@ -100,7 +102,7 @@ function M.back()
       return
     end
     stack[#stack] = nil
-    nx.await(window.show(top.entry, top.line))
+    nx.await(window.show(top.entry, top.line, top.col))
   end)
 end
 
