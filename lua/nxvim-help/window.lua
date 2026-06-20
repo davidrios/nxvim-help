@@ -6,6 +6,8 @@
 -- A singleton handle is reused across `:help` calls so a second lookup reuses the
 -- same window instead of stacking splits.
 
+local highlight = require("nxvim-help.highlight")
+
 local M = {}
 
 local view = nil -- the singleton help view handle
@@ -60,6 +62,14 @@ function M.show(entry, line)
     end
     view:set_cursor(line or anchor_line(lines, entry.name))
     current = entry
+    -- Syntax highlighting (cosmetic): apply once the backing buffer exists. Don't
+    -- block the show on it; surface a failure rather than swallowing it.
+    highlight.apply_to_view(view, lines):catch(function(e)
+      nx.notify(
+        "nxvim-help: highlight failed: " .. tostring(type(e) == "table" and e.message or e),
+        4
+      )
+    end)
     return view
   end)()
 end

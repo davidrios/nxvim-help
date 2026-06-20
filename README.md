@@ -75,7 +75,8 @@ topic at its anchor.
 Done: runtimepath discovery (tags file optional — derived from `doc/*.txt` when
 absent), `:help {topic}` / `:h` opening a topic at its tag in a read-only split,
 prefix resolution, a fuzzy-finder topic picker on bare `:help` (`nx.picker`), in-help
-tag following (`<C-]>` / `<CR>` follow, `<C-t>` back), `q` to close, and
-`:NxHelptags [dir|ALL]` tag generation.
+tag following (`<C-]>` / `<CR>` follow, `<C-t>` back), syntax highlighting of
+headings / `*targets*` / `|links|` / `` `code` `` (extmark groups linked to standard
+highlights), `q` to close, and `:NxHelptags [dir|ALL]` tag generation.
 
-Planned: syntax highlighting of `*targets*` / `|links|`, and `K` / `keywordprg`.
+Planned: `K` / `keywordprg`.
