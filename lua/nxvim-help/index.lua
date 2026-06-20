@@ -1,0 +1,93 @@
+-- nxvim-help.index — discover and parse help tag files across the runtimepath.
+--
+-- Help "registration" is by convention, exactly like neovim: any plugin that ships
+-- a `doc/` directory with a `tags` file (its *targets* indexed as
+-- `tag<TAB>file<TAB>address` lines) is on the runtimepath via :Plugins, so
+-- `nx.runtime_file("doc/tags", true)` finds every one of them — this plugin's own
+-- docs included. No plugin calls an API to register; it just drops `doc/` in its
+-- repo. The parsed, merged index maps a tag -> { file = <absolute .txt path>, name =
+-- <tag> }; the first occurrence in runtimepath order wins, matching vim's "first
+-- tags file" precedence.
+
+local M = {}
+
+-- The merged tag -> entry map, built lazily on first :help and cached. nil until built.
+M._index = nil
+
+-- dirname of an absolute path (strip the final /component). The tags `file` column is
+-- relative to the directory holding its tags file, so we resolve against this.
+local function dirname(path)
+  return (path:gsub("/[^/]*$", ""))
+end
+
+-- Parse one tags file's text into `out` (tag -> entry), resolving each `file` column
+-- against `dir`. Skips blank lines and ctags `!_TAG_` header pragmas. The first
+-- writer of a tag wins (runtimepath precedence), so a later file never clobbers an
+-- earlier tag.
+function M.parse_into(out, text, dir)
+  for line in (text .. "\n"):gmatch("(.-)\n") do
+    if line ~= "" and line:sub(1, 1) ~= "!" then
+      local tag, file = line:match("^([^\t]+)\t([^\t]+)\t")
+      if tag and file and not out[tag] then
+        out[tag] = { file = dir .. "/" .. file, name = tag }
+      end
+    end
+  end
+  return out
+end
+
+-- Build an index from an explicit list of tags-file paths. Async because reading each
+-- file goes through the promise filesystem; an unreadable tags file is skipped (not
+-- fatal — another plugin's docs should still resolve). Returns a promise of the map.
+-- Factored out of build() so a test can drive it against a temp dir without the rtp.
+function M.build_from(tag_files)
+  return nx.async(function()
+    local out = {}
+    for _, tf in ipairs(tag_files or {}) do
+      local ok, text = pcall(nx.await, nx.fs.read_text(tf))
+      if ok and text then
+        M.parse_into(out, text, dirname(tf))
+      end
+    end
+    return out
+  end)()
+end
+
+-- Build (or rebuild) the index by scanning every `doc/tags` on the runtimepath, then
+-- cache it. Returns a promise of the index table.
+function M.build()
+  return nx.async(function()
+    M._index = nx.await(M.build_from(nx.runtime_file("doc/tags", true)))
+    return M._index
+  end)()
+end
+
+-- The index, building it on first use. Promise of the tag -> entry map.
+function M.ensure()
+  return nx.async(function()
+    if not M._index then
+      nx.await(M.build())
+    end
+    return M._index
+  end)()
+end
+
+-- Resolve a topic to an entry: an exact tag first, then the best prefix match
+-- (shortest tag, then lexicographic) so `:help nx.vi` finds `nx.view`. Returns the
+-- entry or nil.
+function M.lookup(index, topic)
+  if index[topic] then
+    return index[topic]
+  end
+  local best
+  for tag, entry in pairs(index) do
+    if tag:sub(1, #topic) == topic then
+      if not best or #tag < #best.name or (#tag == #best.name and tag < best.name) then
+        best = entry
+      end
+    end
+  end
+  return best
+end
+
+return M

@@ -1,0 +1,29 @@
+*nxvim-help.txt*	Help for the nxvim help system
+
+==============================================================================
+NXVIM HELP						*nxvim-help* *nxvim-help-intro*
+
+nxvim-help brings vim-style `:help` to nxvim. It is an optional first-party
+plugin built entirely on the native nx.* plugin API.
+
+	:help {topic}		Open help for {topic}.
+	:help			Open this page.
+	q			(in a help window) close it.
+
+==============================================================================
+REGISTERING HELP					*nxvim-help-registering*
+
+There is no registration API. Any plugin that ships a doc/ directory with a
+`tags` file is discovered automatically, because :Plugins puts every installed
+plugin on the runtimepath — exactly like dropping doc/ into a neovim plugin.
+
+A tags file is one `tag<Tab>file<Tab>address` line per *target*, e.g. the
+anchors on this page are indexed in this plugin's own doc/tags.
+
+==============================================================================
+USAGE							*nxvim-help-usage*
+
+Type `:help nxvim-help-registering` to jump straight to a tagged section, or
+`:help nxvim-help-u` to see prefix matching resolve to this one.
+
+ vim:tw=78:ft=help:
