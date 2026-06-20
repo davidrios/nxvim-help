@@ -18,9 +18,21 @@ local function run(body)
   end)
 end
 
--- Stream every known tag as a picker item — `text` is the tag (what the matcher sees
--- and shows), `entry` carries its index entry for confirm. Sorted for a stable list.
--- Async: it builds the index first (the engine awaits the returned promise).
+-- 1-based line of the `*tag*` anchor within `text` (1 if absent) — where the location
+-- preview should sit for that topic.
+local function anchor_row(text, tag)
+  local pos = text:find("*" .. tag .. "*", 1, true)
+  if not pos then
+    return 1
+  end
+  local _, n = text:sub(1, pos):gsub("\n", "")
+  return n + 1
+end
+
+-- Stream every known tag as a picker item. `text` is the tag (what the matcher sees
+-- and shows); `entry` carries its index entry for confirm; `path`/`row`/`col` drive the
+-- "location" preview (the file scrolled to the tag's anchor). Sorted for a stable list.
+-- Async: builds the index, then reads each doc file once to locate its anchors.
 function M.items(ctx)
   return nx.async(function()
     local idx = nx.await(index.ensure())
@@ -29,8 +41,24 @@ function M.items(ctx)
       tags[#tags + 1] = tag
     end
     table.sort(tags)
+    -- Read each file at most once; many tags share one file.
+    local cache = {}
+    local function text_of(file)
+      if cache[file] == nil then
+        local ok, t = pcall(nx.await, nx.fs.read_text(file))
+        cache[file] = (ok and t) or ""
+      end
+      return cache[file]
+    end
     for _, tag in ipairs(tags) do
-      ctx.push({ text = tag, entry = idx[tag] })
+      local entry = idx[tag]
+      ctx.push({
+        text = tag,
+        entry = entry,
+        path = entry.file,
+        row = anchor_row(text_of(entry.file), tag),
+        col = 1,
+      })
     end
   end)()
 end
@@ -48,6 +76,7 @@ nx.picker.source({
   name = "nxvim_help",
   items = M.items,
   confirm = M.confirm,
+  preview = "location", -- preview the doc scrolled to the highlighted topic
 })
 
 -- Open the help-topic picker.

@@ -45,6 +45,14 @@ nx.test.describe("nxvim-help picker", function()
     for i = 2, #texts do
       nx.test.expect(texts[i - 1] <= texts[i]).to_be_truthy()
     end
+    -- carries the location-preview data: path = its file, row = its anchor line
+    nx.test.expect(found.path).to_be(found.entry.file)
+    local text = nx.await(nx.fs.read_text(found.path))
+    local lines = {}
+    for ln in (text .. "\n"):gmatch("(.-)\n") do
+      lines[#lines + 1] = ln
+    end
+    nx.test.expect(lines[found.row]).to_contain("*nxvim-help-usage*")
   end)
 
   nx.test.it("confirm opens the chosen topic in the help window", function(t)
@@ -73,5 +81,7 @@ nx.test.describe("nxvim-help picker", function()
       return it and #it >= 1 and it
     end)
     nx.test.expect(#items >= 1).to_be_truthy()
+    -- the picker is opened with a location preview pane
+    nx.test.expect(nx._picker.preview).to_be("location")
   end)
 end)

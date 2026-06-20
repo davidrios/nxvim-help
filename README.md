@@ -81,7 +81,8 @@ Complete:
 - runtimepath discovery — a `tags` file is optional (derived from `doc/*.txt`)
 - `:help {topic}` / `:h` open a topic at its tag in a read-only split; prefix
   resolution; unknown topic → loud `E149`
-- bare `:help` opens a fuzzy-finder topic picker (`nx.picker`)
+- bare `:help` opens a fuzzy-finder topic picker (`nx.picker`) with a live preview
+  of each topic (the doc scrolled to its tag)
 - in-help tag following: `<C-]>` / `<CR>` follow, `<C-t>` back (a tag stack)
 - syntax highlighting of headings / `*targets*` / `|links|` / `` `code` `` (extmark
   groups linked to standard highlights)
