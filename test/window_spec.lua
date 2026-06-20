@@ -47,7 +47,9 @@ nx.test.describe("nxvim-help window", function()
   end)
 
   nx.test.it("opens :help {topic} and lands on the tag anchor", function(t)
-    help.help("nxvim-help-usage")
+    -- Drive the real :help command: core defers it, the server sees the plugin's
+    -- user command is registered, and runs it (the installed-plugin path).
+    t:feed(":help nxvim-help-usage<CR>")
     wait_contains(t, "USAGE")
     -- the cursor settles on the anchor line a tick later
     local line = t:wait_for(function()
