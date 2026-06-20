@@ -11,6 +11,8 @@ API.
 :help                       fuzzy-find a topic (the picker)
 :help nxvim-help            open help for a topic
 :h nxvim-help-usage         :h is the abbreviation
+CTRL-] / <CR>               (in help) follow the tag under the cursor
+CTRL-T                      (in help) jump back along the tag stack
 q                           (in the help window) close it
 ```
 
@@ -72,8 +74,8 @@ topic at its anchor.
 
 Done: runtimepath discovery (tags file optional — derived from `doc/*.txt` when
 absent), `:help {topic}` / `:h` opening a topic at its tag in a read-only split,
-prefix resolution, a fuzzy-finder topic picker on bare `:help` (`nx.picker`), `q` to
-close, and `:NxHelptags [dir|ALL]` tag generation.
+prefix resolution, a fuzzy-finder topic picker on bare `:help` (`nx.picker`), in-help
+tag following (`<C-]>` / `<CR>` follow, `<C-t>` back), `q` to close, and
+`:NxHelptags [dir|ALL]` tag generation.
 
-Planned: in-help tag following (`<C-]>` / `<C-t>`), syntax highlighting of
-`*targets*` / `|links|`, and `K` / `keywordprg`.
+Planned: syntax highlighting of `*targets*` / `|links|`, and `K` / `keywordprg`.

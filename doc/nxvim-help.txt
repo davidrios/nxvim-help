@@ -6,6 +6,9 @@ NXVIM HELP						*nxvim-help* *nxvim-help-intro*
 nxvim-help brings vim-style `:help` to nxvim. It is an optional first-party
 plugin built entirely on the native nx.* plugin API.
 
+See also |nxvim-help-registering| and |nxvim-help-usage| — put the cursor on a
+hot-link and press CTRL-] to follow it, CTRL-T to come back.
+
 	:help {topic}		Open help for {topic}.
 	:help			Fuzzy-find a topic (the picker).
 	q			(in a help window) close it.

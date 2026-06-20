@@ -10,6 +10,7 @@ local M = {}
 
 local view = nil -- the singleton help view handle
 local mounted = false -- whether the view is currently shown
+local current = nil -- the entry currently displayed (for the tag stack)
 
 -- The 1-based line of the `*tag*` anchor in `lines`, or 1 if absent. Vim's tag
 -- address is a `/*tag*` search; for phase 1 we locate the literal anchor directly.
@@ -41,8 +42,9 @@ local function split_lines(text)
   return out
 end
 
--- Open `entry` in the help split, jumping to its tag anchor. Async (reads the file).
-function M.show(entry)
+-- Open `entry` in the help split. Jumps to `line` if given (used to restore position
+-- when popping the tag stack), else to the tag's `*anchor*`. Async (reads the file).
+function M.show(entry, line)
   return nx.async(function()
     local text = nx.await(nx.fs.read_text(entry.file))
     local lines = split_lines(text)
@@ -56,9 +58,16 @@ function M.show(entry)
     else
       view:focus()
     end
-    view:set_cursor(anchor_line(lines, entry.name))
+    view:set_cursor(line or anchor_line(lines, entry.name))
+    current = entry
     return view
   end)()
+end
+
+-- The entry currently displayed (nil before first show), so the tag stack can record
+-- where a jump came from.
+function M.current()
+  return current
 end
 
 -- Close the help split (keeps the handle for reuse).
@@ -88,6 +97,7 @@ function M._reset()
   end
   view = nil
   mounted = false
+  current = nil
 end
 
 return M

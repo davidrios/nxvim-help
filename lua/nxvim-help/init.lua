@@ -18,6 +18,7 @@ local index = require("nxvim-help.index")
 local window = require("nxvim-help.window")
 local helptags = require("nxvim-help.helptags")
 local picker = require("nxvim-help.picker")
+local tagstack = require("nxvim-help.tagstack")
 
 local M = {}
 
@@ -110,6 +111,16 @@ function M.setup(_opts)
       nx.keymap.set("n", "q", function()
         window.close()
       end, { buffer = 0, desc = "Close help" })
+      -- Follow the tag under the cursor (vim binds both <C-]> and <CR> in help)…
+      for _, lhs in ipairs({ "<C-]>", "<CR>" }) do
+        nx.keymap.set("n", lhs, function()
+          tagstack.follow()
+        end, { buffer = 0, desc = "Follow help tag" })
+      end
+      -- …and pop back along the tag stack.
+      nx.keymap.set("n", "<C-t>", function()
+        tagstack.back()
+      end, { buffer = 0, desc = "Back (help tag stack)" })
     end,
   })
 end
